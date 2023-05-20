@@ -15,7 +15,7 @@ setup.bat
 ```
 
 * _setup.bat_ automatically installs essential packages via **_pip_** command.  
-If you cannot use _pip_, try _conda_ command and install \[stanza, graphviz, flask, flask_cors\] to your environment.
+If you cannot use _pip_, try _conda_ command and install \[**stanza**, **graphviz**, **flask**, **flask_cors**\] to your environment.
 
 
 3. Run.
