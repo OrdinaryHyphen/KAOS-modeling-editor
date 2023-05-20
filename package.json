@@ -1,0 +1,96 @@
+{
+  "name": "graphviz-visual-editor",
+  "version": "0.6.5",
+  "description": "A web application for interactive visual editing of Graphviz graphs described in the DOT language",
+  "keywords": [
+    "Graphviz",
+    "DOT",
+    "visual-editor",
+    "javascript",
+    "graph-drawing",
+    "graph-visualization",
+    "graph-view",
+    "graphviz-dot-language",
+    "graphviz-viewer",
+    "wysiwyg",
+    "wysiwyg-editor",
+    "interactive-visualization",
+    "text-editor",
+    "web-application "
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/magjac/graphviz-visual-editor.git"
+  },
+  "dependencies": {
+    "@material-ui/core": "^4.12.4",
+    "@material-ui/icons": "^4.11.3",
+    "axios": "^1.3.6",
+    "d3-graphviz": "4.1.0",
+    "d3-scale-chromatic": "^1.5.0",
+    "d3-selection": "^2.0.0",
+    "d3-transition": "^2.0.0",
+    "d3-zoom": "^2.0.0",
+    "moment": "^2.24.0",
+    "prop-types": "^15.7.2",
+    "python-shell": "^5.0.0",
+    "qs": "^6.7.0",
+    "react": "^16.8.6",
+    "react-ace": "^6.6.0",
+    "react-color": "^2.17.3",
+    "react-dom": "^16.8.6",
+    "react-perfect-scrollbar": "^1.5.3",
+    "react-scripts": "^3.3.0",
+    "typeface-roboto": "0.0.54"
+  },
+  "scripts": {
+    "start": "react-scripts --max_old_space_size=4096 start",
+    "start:coverage": "react-scripts --max_old_space_size=4096 -r @cypress/instrument-cra start",
+    "build": "react-scripts --max_old_space_size=4096 build",
+    "test": "react-scripts test --env=jsdom --verbose=false",
+    "test:coverage": "react-scripts test --env=jsdom --coverage --coverageDirectory=./coverage-jest",
+    "integration-test": "cypress run --config video=${CI:-false} --browser=chrome --headless --record --key a12725d3-851c-4e67-b432-079b4fb1a875",
+    "merge-coverage": "mkdir -p coverage && cp -p coverage-jest/coverage-final.json coverage/coverage-final-jest.json && cp -p coverage-cypress/coverage-final.json coverage/coverage-final-cypress.json && nyc report --temp-dir coverage --report-dir coverage --reporter lcov --reporter clover --reporter json --reporter text",
+    "eject": "react-scripts eject"
+  },
+  "homepage": ".",
+  "devDependencies": {
+    "@cypress/code-coverage": "^3.7.2",
+    "@cypress/instrument-cra": "^1.1.1",
+    "@harrison-ifeanyichukwu/xml-serializer": "^1.2.2",
+    "codecov": "^3.7.1",
+    "cypress": "^4.5.0",
+    "enzyme": "^3.9.0",
+    "enzyme-adapter-react-16": "^1.13.2",
+    "istanbul-lib-coverage": "^3.0.0",
+    "jest-localstorage-mock": "^2.4.0",
+    "markdown-to-html": "0.0.13",
+    "nyc": "^15.0.0",
+    "pegjs": "^0.9.0",
+    "react-test-renderer": "^16.8.6",
+    "wait-on": "^3.3.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "jest": {
+    "coveragePathIgnorePatterns": [
+      "src/test-utils",
+      "src/shapes.js",
+      "src/dotParser.js"
+    ]
+  },
+  "nyc": {
+    "report-dir": "coverage-cypress"
+  }
+}
