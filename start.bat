@@ -1,4 +1,4 @@
 @echo on
 
-start "KAOS Modeling Editor -Python Server-"  python ./src/python/PythonServer.py
-npm run start
+start "KAOS Modeling Editor -Node.js Server-"  npm run start
+python ./src/python/PythonServer.py
