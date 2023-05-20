@@ -93,6 +93,10 @@ function ButtonAppBar(props) {
     props.onEdgeFormatClick('draw');
   };
 
+  var handleGoalDescriptionClick = (event) => {
+    props.onGoalDescriptionClick('draw');
+  };
+
   var handleSettingsButtonClick = (event) => {
     props.onSettingsButtonClick(event.currentTarget);
   };
@@ -168,7 +172,7 @@ function ButtonAppBar(props) {
             color="inherit"
             className={classes.flex}
           >
-            Graphviz Visual Editor
+           KAOS Modeling Editor
           </Typography>
           <IconButton
             id="zoom-in"
@@ -214,13 +218,19 @@ function ButtonAppBar(props) {
             color="inherit"
             onClick={handleNodeFormatClick}
           >
-            Node format
+            Node<br />format
           </Button>
           <Button
             color="inherit"
             onClick={handleEdgeFormatClick}
           >
-            Edge format
+            Edge<br />format
+          </Button>
+          <Button
+            color="inherit"
+            onClick={handleGoalDescriptionClick}
+          >
+            Goal<br />Descriptions
           </Button>
           <IconButton
             id="settings"
@@ -276,6 +286,7 @@ ButtonAppBar.propTypes = {
   onInsertClick: PropTypes.func.isRequired,
   onNodeFormatClick: PropTypes.func.isRequired,
   onEdgeFormatClick: PropTypes.func.isRequired,
+  onGoalDescriptionClick: PropTypes.func.isRequired,
   onSettingsButtonClick: PropTypes.func.isRequired,
   onHelpButtonClick: PropTypes.func.isRequired,
 };

@@ -15,6 +15,7 @@ import OpenFromBrowserDialog from '../OpenFromBrowserDialog';
 import SaveAsToBrowserDialog from '../SaveAsToBrowserDialog';
 import InsertPanels from '../InsertPanels';
 import FormatDrawer from '../FormatDrawer';
+import DescriptionDrawer from '../DescriptionDrawer';
 import { schemeCategory10 as d3_schemeCategory10} from 'd3-scale-chromatic';
 import { schemePaired as d3_schemePaired} from 'd3-scale-chromatic';
 import KeyboardShortcutsDialog from '../KeyboardShortcutsDialog';
@@ -27,6 +28,8 @@ import ExportAsSvgDialog from '../ExportAsSvgDialog'
 import { graphvizVersion } from '../graphvizVersion';
 import UpdatedSnackbar from '../UpdatedSnackbar';
 import packageJSON from '../../package.json';
+import Axios from 'axios';
+
 
 const styles = theme => ({
   root: {
@@ -52,17 +55,24 @@ class Index extends React.Component {
     let dotSrc = localStorage.getItem('dotSrc');
     if (dotSrc == null) {
       dotSrc = `strict digraph {
-    a [shape="ellipse" style="filled" fillcolor="` + d3_schemeCategory10[0] + `"]
-    b [shape="polygon" style="filled" fillcolor="` + d3_schemeCategory10[1] + `"]
-    a -> b [fillcolor="` + d3_schemePaired[0] + `" color="` + d3_schemePaired[1] + `"]
-}`;
+      	a [shape="ellipse" style="filled" fillcolor="` + d3_schemeCategory10[0] + `"]
+   	b [shape="polygon" style="filled" fillcolor="` + d3_schemeCategory10[1] + `"]
+    	a -> b [fillcolor="` + d3_schemePaired[0] + `" color="` + d3_schemePaired[1] + `"]
+	  }`;
     }
+
+    let goalDescription = localStorage.getItem('goalDescription');
+    if (goalDescription == null) {
+      goalDescription = '';
+    }
+
     this.state = {
       projects: JSON.parse(localStorage.getItem('projects')) || {},
       initialized: false,
       name: localStorage.getItem('name') || '',
       dotSrc: dotSrc,
       dotSrcLastChangeTime: +localStorage.getItem('dotSrcLastChangeTime') || Date.now(),
+      goalDescription: goalDescription,
       svg: localStorage.getItem('svg') || '',
       hasUndo: false,
       hasRedo: false,
@@ -77,6 +87,7 @@ class Index extends React.Component {
       insertPanelsAreOpen: (localStorage.getItem('insertPanelsAreOpen') || 'false') === 'true',
       nodeFormatDrawerIsOpen: (localStorage.getItem('nodeFormatDrawerIsOpen') || 'false') === 'true',
       edgeFormatDrawerIsOpen: (localStorage.getItem('edgeFormatDrawerIsOpen') || 'false') === 'true',
+      goalDescriptionDrawerIsOpen: (localStorage.getItem('goalDescriptionDrawerIsOpen') || 'false') === 'true',
       keyboardShortcutsDialogIsOpen: false,
       mouseOperationsDialogIsOpen: false,
       aboutDialogIsOpen: false,
@@ -172,6 +183,34 @@ class Index extends React.Component {
     this.setState(undoRedoState);
   }
 
+  handleGoalDescriptionChange = (description) => {
+     this.setPersistentState((state) => {
+     const newState = {
+        name: state.name || (description ? this.createUntitledName(state.projects) : ''),
+        goalDescription: description,
+      };
+      return newState;
+    });
+  }
+
+  handleGoalDescriptionParsing = () => {
+   let handleTextChange = this.handleTextChange;
+    Axios.post('http://127.0.0.1:5000/parse', {
+      post_text: this.state.goalDescription
+    }, {
+    headers: {
+      'Access-Control-Allow-Origin': '*'
+    }}).then(function(res) {
+      let result = res.data.result;
+      result = result.replace(/\n(?!	)/g, " \\n");
+      result = result.replace(/\\n fill/g, "fill");
+      result = result.replaceAll("\\n}", "}");
+      result = result.replace(/\\n$/, "");
+      console.log(result);
+      handleTextChange(result);
+    })
+  }
+
   handleMainMenuButtonClick = (anchorEl) => {
     this.setState({
       mainMenuIsOpen: true,
@@ -254,6 +293,7 @@ class Index extends React.Component {
     this.setPersistentState({
       nodeFormatDrawerIsOpen: !this.state.nodeFormatDrawerIsOpen,
       edgeFormatDrawerIsOpen: false,
+      goalDescriptionDrawerIsOpen: false,
     });
   }
 
@@ -267,14 +307,31 @@ class Index extends React.Component {
   handleEdgeFormatButtonClick = () => {
     this.setFocusIf('edgeFormatDrawerIsOpen', null, 'EdgeFormatDrawer')
     this.setPersistentState({
-      edgeFormatDrawerIsOpen: !this.state.edgeFormatDrawerIsOpen,
       nodeFormatDrawerIsOpen: false,
+      edgeFormatDrawerIsOpen: !this.state.edgeFormatDrawerIsOpen,
+      goalDescriptionDrawerIsOpen: false,
     });
   }
 
   handleEdgeFormatDrawerClose = () => {
     this.setPersistentState({
       edgeFormatDrawerIsOpen: false,
+    });
+    this.setFocus(null);
+  }
+
+  handleGoalDescriptionButtonClick = () => {
+    this.setFocusIf('goalDescriptionDrawerIsOpen', null, 'GaolDescriptionDrawer');
+    this.setPersistentState({
+      nodeFormatDrawerIsOpen: false,
+      edgeFormatDrawerIsOpen: false,
+      goalDescriptionDrawerIsOpen: !this.state.goalDescriptionDrawerIsOpen,
+    });
+  }
+
+  handleGoalDescriptionDrawerClose = () => {
+    this.setPersistentState({
+     goalDescriptionDrawerIsOpen: false,
     });
     this.setFocus(null);
   }
@@ -611,6 +668,11 @@ class Index extends React.Component {
     }
   }
 
+  registerOverwriteText = (overwriteText) => {
+    this.overwriteText = overwriteText;
+    console.log(this.overwriteText);
+  }
+
   registerUndo = (undo) => {
     this.undo = undo;
   }
@@ -642,12 +704,18 @@ class Index extends React.Component {
   }
 
   handleNodeFormatDrawerClick = () => {
+    this.setFocus('NodeFormatDrawer');
     this.setFocusIf('nodeFormatDrawerIsOpen', 'NodeFormatDrawer', null)
   }
 
   handleEdgeFormatDrawerClick = () => {
     this.setFocus('EdgeFormatDrawer');
     this.setFocusIf('edgeFormatDrawerIsOpen', 'EdgeFormatDrawer', null)
+  }
+
+  handleGoalDescriptionDrawerClick = () => {
+    this.setFocus('GoalDescriptionDrawer');
+    this.setFocusIf('GoalDescriptionDrawerIsOpen', 'GoalDescriptionDrawer', null)
   }
 
   handleUpdatedSnackbarClose = () => {
@@ -681,13 +749,14 @@ class Index extends React.Component {
 
   render() {
     const { classes } = this.props;
-    const editorIsOpen = !this.state.nodeFormatDrawerIsOpen && !this.state.edgeFormatDrawerIsOpen;
+    const editorIsOpen = !this.state.nodeFormatDrawerIsOpen && !this.state.edgeFormatDrawerIsOpen && !this.state.goalDescriptionDrawerIsOpen;
     const textEditorHasFocus = this.state.focusedPane === 'TextEditor';
     const nodeFormatDrawerHasFocus = this.state.focusedPane === 'NodeFormatDrawer';
     const edgeFormatDrawerHasFocus = this.state.focusedPane === 'EdgeFormatDrawer';
+    const goalDescriptionDrawerHasFocus = this.state.focusedPane === 'GoalDescriptionDrawer';
     const insertPanelsHaveFocus = this.state.focusedPane === 'InsertPanels';
     const graphHasFocus = this.state.focusedPane === 'Graph';
-    const leftPaneElevation = textEditorHasFocus || nodeFormatDrawerHasFocus || edgeFormatDrawerHasFocus? focusedElevation : defaultElevation;
+    const leftPaneElevation = textEditorHasFocus || nodeFormatDrawerHasFocus || edgeFormatDrawerHasFocus || goalDescriptionDrawerHasFocus ? focusedElevation : defaultElevation;
     const rightPaneElevation = graphHasFocus ? focusedElevation : defaultElevation;
     const midPaneElevation = insertPanelsHaveFocus ? focusedElevation : defaultElevation;
 
@@ -719,6 +788,7 @@ class Index extends React.Component {
           onInsertClick={this.handleInsertButtonClick}
           onNodeFormatClick={this.handleNodeFormatButtonClick}
           onEdgeFormatClick={this.handleEdgeFormatButtonClick}
+          onGoalDescriptionClick={this.handleGoalDescriptionButtonClick}
           onZoomInButtonClick={this.handleZoomInButtonClick}
           onZoomOutButtonClick={this.handleZoomOutButtonClick}
           onZoomOutMapButtonClick={this.handleZoomOutMapButtonClick}
@@ -838,6 +908,15 @@ class Index extends React.Component {
                   onFillColorChange={this.handleEdgeFillColorChange}
                 />
               }
+              {this.state.goalDescriptionDrawerIsOpen &&
+                <DescriptionDrawer
+                  goalDescription={this.state.goalDescription}
+                  onClick={this.handleGoalDescriptionDrawerClick}
+                  onDescriptionDrawerClose={this.handleGoalDescriptionDrawerClose}
+                  onTextChange={this.handleGoalDescriptionChange}
+                  onStartParsing={this.handleGoalDescriptionParsing}
+                />
+              }
               <div style={{display: editorIsOpen ? 'block' : 'none'}}>
                 <TextEditor
                   // allocated viewport width - 2 * padding
@@ -852,6 +931,7 @@ class Index extends React.Component {
                   holdOff={this.state.holdOff}
                   fontSize={this.state.fontSize}
                   tabSize={this.state.tabSize}
+                  registerOverwriteText={this.registerOverwriteText}
                   registerUndo={this.registerUndo}
                   registerRedo={this.registerRedo}
                   registerUndoReset={this.registerUndoReset}

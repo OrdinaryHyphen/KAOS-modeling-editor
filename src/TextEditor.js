@@ -25,11 +25,15 @@ class TextEditor extends React.Component {
     this.pendingChanges = 0;
   }
 
-  handleChange = (value, event) => {
+  getUndoRedoState = () => {
     const hasUndo = this.editor.getSession().getUndoManager().hasUndo();
     const hasRedo = this.editor.getSession().getUndoManager().hasRedo();
     const undoRedoState = {hasUndo, hasRedo};
-    this.props.onTextChange(value, undoRedoState);
+    return undoRedoState;
+  }
+
+  handleChange = (value, event) => {
+    this.props.onTextChange(value, this.getUndoRedoState);
   };
 
   handleBeforeLoad = (ace) => {
@@ -38,6 +42,7 @@ class TextEditor extends React.Component {
 
   handleLoad = (editor) => {
     this.editor = editor;
+    this.props.registerOverwriteText(this.overwriteText);
     this.props.registerUndo(this.undo);
     this.props.registerRedo(this.redo);
     this.props.registerUndoReset(this.resetUndoStack);
@@ -46,6 +51,10 @@ class TextEditor extends React.Component {
   handleErrorButtonClick = (event) => {
     this.editor.scrollToLine(this.props.error.line - 1, true);
   };
+
+  overwriteText = (value) => {
+    this.handleChange(value, null);
+  }
 
   undo = () => {
     this.editor.getSession().getUndoManager().undo();
@@ -132,8 +141,7 @@ class TextEditor extends React.Component {
             $blockScrolling: true
           }}
           annotations={annotations}
-          markers={markers}
-        />
+          markers={markers}        />
         <IconButton
           id="error-button"
           className={classes.errorButton}
