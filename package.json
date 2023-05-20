@@ -1,7 +1,7 @@
 {
-  "name": "graphviz-visual-editor",
-  "version": "0.6.5",
-  "description": "A web application for interactive visual editing of Graphviz graphs described in the DOT language",
+  "name": "KAOS-modeling-editor",
+  "version": "0.0.1",
+  "description": "A web application for auto-generation of KAOS goal models",
   "keywords": [
     "Graphviz",
     "DOT",
@@ -21,7 +21,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/magjac/graphviz-visual-editor.git"
+    "url": "https://github.com/OrdinaryHyphen/KAOS-modeling-editor.git"
   },
   "dependencies": {
     "@material-ui/core": "^4.12.4",
@@ -45,14 +45,15 @@
     "typeface-roboto": "0.0.54"
   },
   "scripts": {
-    "start": "react-scripts --max_old_space_size=4096 start",
+    "start": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts --max_old_space_size=4096 start",
     "start:coverage": "react-scripts --max_old_space_size=4096 -r @cypress/instrument-cra start",
-    "build": "react-scripts --max_old_space_size=4096 build",
+    "build": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts --max_old_space_size=4096 build",
     "test": "react-scripts test --env=jsdom --verbose=false",
     "test:coverage": "react-scripts test --env=jsdom --coverage --coverageDirectory=./coverage-jest",
     "integration-test": "cypress run --config video=${CI:-false} --browser=chrome --headless --record --key a12725d3-851c-4e67-b432-079b4fb1a875",
     "merge-coverage": "mkdir -p coverage && cp -p coverage-jest/coverage-final.json coverage/coverage-final-jest.json && cp -p coverage-cypress/coverage-final.json coverage/coverage-final-cypress.json && nyc report --temp-dir coverage --report-dir coverage --reporter lcov --reporter clover --reporter json --reporter text",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "dev": "set NODE_OPTIONS=--openssl-legacy-provider"
   },
   "homepage": ".",
   "devDependencies": {
