@@ -22,3 +22,6 @@ If you cannot use _pip_, try _conda_ command and install \[stanza, graphviz, fla
 ```
 start.bat
 ```
+
+## Tested Browsers
+* Chrome 113
