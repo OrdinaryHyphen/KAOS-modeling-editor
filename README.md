@@ -1,2 +1,3 @@
 # KAOS Modeling Editor
-An interactive editer for GraphViz with auto-generation of KAOS goal models, based on GraphViz Visual Editor (https://github.com/magjac/graphviz-visual-editor) by magjac.
+An interactive visual editer for GraphViz with auto-generation of KAOS goal models.
+The entire tool is based on GraphViz Visual Editor (https://github.com/magjac/graphviz-visual-editor) by magjac.
