@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+ 
 """generator of versions JSON file from a CHANGELOG.md file"""
 
 import json
