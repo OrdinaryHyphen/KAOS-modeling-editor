@@ -1,4 +1,4 @@
-@echo on
+@echo off
 
 pip install graphviz
 pip install stanza
