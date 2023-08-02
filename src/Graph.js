@@ -10,7 +10,7 @@ import { zoomIdentity as d3_zoomIdentity} from 'd3-zoom';
 import { zoomTransform as d3_zoomTransform} from 'd3-zoom';
 import { pointer as d3_pointer} from 'd3-selection';
 import 'd3-graphviz';
-import DotGraph from './dot'
+import DotGraph from './dot';
 import { wasmFolder } from "@hpcc-js/wasm";
 
 const styles = {
@@ -296,7 +296,7 @@ class Graph extends React.Component {
     document.activeElement.blur();
     event.preventDefault();
     event.stopPropagation();
-    if (!(event.which === 1 && (event.ctrlKey || event.shiftKey))) {
+    if (!(event.which === 1 && event.shiftKey)) {
       this.unSelectComponents();
     }
   }
@@ -382,8 +382,15 @@ class Graph extends React.Component {
     document.activeElement.blur();
     event.preventDefault();
     event.stopPropagation();
+
+    if(event.ctrlKey){
+      let node_title = event.currentTarget.getElementsByTagName("title")[0].innerHTML;
+      this.props.onLabelEditClick(node_title);
+      return;
+    }
+
     if (!this.isDrawingEdge && event.which === 1) {
-      let extendSelection = event.ctrlKey || event.shiftKey;
+      let extendSelection = event.shiftKey;
       this.selectComponents(d3_select(event.currentTarget), extendSelection);
     }
   }
@@ -403,6 +410,10 @@ class Graph extends React.Component {
       this.latestEdgeAttributes = Object.assign({}, this.props.defaultEdgeAttributes);
       this.dotGraph.insertEdge(startNodeName, endNodeName, this.latestEdgeAttributes);
       this.props.onTextChange(this.dotGraph.dotSrc);
+      this.props.onEdgeEditing(startNodeName + '=>' + endNodeName);
+    }else{
+      //handle opening
+      console.log("double click: while not drawing edge");
     }
     this.isDrawingEdge = false;
   }
@@ -434,7 +445,7 @@ class Graph extends React.Component {
     document.activeElement.blur();
     event.preventDefault();
     event.stopPropagation();
-    let extendSelection = event.ctrlKey || event.shiftKey;
+    let extendSelection = event.shiftKey;
     this.selectComponents(d3_select(event.currentTarget), extendSelection);
   }
 
@@ -504,7 +515,7 @@ class Graph extends React.Component {
       let height = Math.abs(y1 - y0);
       if (width === 0 && height === 0) {
         this.selectArea = null;
-        if (!(event.ctrlKey || event.shiftKey)) {
+        if (!event.shiftKey) {
           this.unSelectComponents();
         }
         return;
@@ -518,7 +529,8 @@ class Graph extends React.Component {
           return false
         return true
       });
-      let extendSelection = event.ctrlKey || event.shiftKey;
+
+      let extendSelection = event.shiftKey;
       this.selectComponents(components, extendSelection);
       this.selectArea = null;
     }
@@ -746,6 +758,7 @@ class Graph extends React.Component {
     Object.assign(this.latestNodeAttributes, attributesToOverride);
     let nodeName = this.getNextNodeId();
     this.insertNode(x0, y0, nodeName, this.latestNodeAttributes);
+    this.props.onLabelCloning();
   }
 
   insertNodeWithDefaultAttributes(x0, y0, attributesToOverride={}) {

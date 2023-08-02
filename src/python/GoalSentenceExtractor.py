@@ -114,7 +114,12 @@ class GoalSentenceExtractor:
 		keywords = [
 			'new ',
 			'upcoming ',
+			'forthcoming',
+			'imminent',
+			'impending',
 			'envisioned ',
+			'expected ',
+			'anticipated ',
 			' to be designed',
 			' to be made'
 		]
@@ -129,7 +134,9 @@ class GoalSentenceExtractor:
 		sentence_casefold = sentence.casefold()
 		keywords = [
 			'current ',
+			'contemporaly'
 			'existing '
+			'extant '
 		]
 		
 		for keyword in keywords:

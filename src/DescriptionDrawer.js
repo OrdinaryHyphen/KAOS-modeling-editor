@@ -12,7 +12,6 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import Toolbar from '@material-ui/core/Toolbar';
 
 
-
 const drawerWidth = '100%';
 
 const styles = theme => ({

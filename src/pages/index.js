@@ -21,6 +21,7 @@ import { schemePaired as d3_schemePaired} from 'd3-scale-chromatic';
 import KeyboardShortcutsDialog from '../KeyboardShortcutsDialog';
 import MouseOperationsDialog from '../MouseOperationsDialog';
 import AboutDialog from '../AboutDialog';
+import LabelEditDialog from '../LabelEditDialog';
 import { parse as qs_parse } from 'qs';
 import { stringify as qs_stringify } from 'qs';
 import ExportAsUrlDialog from '../ExportAsUrlDialog';
@@ -47,6 +48,7 @@ const styles = theme => ({
 
 const defaultElevation = 2;
 const focusedElevation = 8;
+const fs = require('fs');
 
 class Index extends React.Component {
 
@@ -91,6 +93,9 @@ class Index extends React.Component {
       keyboardShortcutsDialogIsOpen: false,
       mouseOperationsDialogIsOpen: false,
       aboutDialogIsOpen: false,
+      labelEditDialogIsOpen: false,
+      nodeTitle: '',
+      originalLabel: '',
       fitGraph : localStorage.getItem('fitGraph') === 'true',
       transitionDuration: localStorage.getItem('transitionDuration') || 1,
       tweenPaths : localStorage.getItem('tweenPaths') !== 'false',
@@ -108,6 +113,11 @@ class Index extends React.Component {
       graphvizVersion: graphvizVersion,
       newGraphvizVersion: graphvizVersion !== localStorage.getItem('graphvizVersion'),
       updatedSnackbarIsOpen: packageJSON.version !== localStorage.getItem('version'),
+      selectedGraphComponents: [],
+      logName: localStorage.getItem('logName') || "log-"+(new Date().getTime()),
+      howOftenLabelsAreCloned: localStorage.getItem('howOftenLabelsAreCloned') || 0,
+      howOftenLabelsAreEdited: localStorage.getItem('howOftenLabelsAreEdited') || 0,
+      howOftenEdgesAreEdited: localStorage.getItem('howOftenEdgesAreEdited') || 0,
     };
   }
 
@@ -206,9 +216,26 @@ class Index extends React.Component {
       result = result.replace(/\\n fill/g, "fill");
       result = result.replaceAll("\\n}", "}");
       result = result.replace(/\\n$/, "");
+      result = result.replace('label=Root', 'label="Root"');
       console.log(result);
       handleTextChange(result);
     })
+
+    this.appendLog(`Total Labels Cloned: ${this.state.howOftenLabelsAreCloned}`);
+    this.appendLog(`Total Labels Edited: ${this.state.howOftenLabelsAreEdited}`);
+    this.appendLog(`Total Edges Edited: ${this.state.howOftenEdgesAreEdited}`);
+
+    this.setState({
+      howOftenLabelsAreCloned: 0,
+      howOftenLabelsAreEdited: 0,
+      howOftenEdgesAreEdited: 0,
+    });
+  }
+
+
+  appendLog = (log) => {
+    console.log(log);
+    // couldn't write log from brower
   }
 
   handleMainMenuButtonClick = (anchorEl) => {
@@ -227,6 +254,20 @@ class Index extends React.Component {
     this.setState({
       rename: true,
       saveToBrowserAsDialogIsOpen: true,
+    });
+  }
+
+  handleLabelCloning = () => {
+     this.appendLog(`Label Cloned: `)
+  	this.setState({
+      howOftenLabelsAreCloned: this.state.howOftenLabelsAreCloned+1,
+    });
+  }
+
+  handleEdgeEditing = (log) => {
+     this.appendLog(`Edge Edited: ${log}`)
+  	this.setState({
+      howOftenEdgesAreEdited: this.state.howOftenEdgesAreEdited+1,
     });
   }
 
@@ -597,6 +638,86 @@ class Index extends React.Component {
     this.setState({
       aboutDialogIsOpen: false,
     });
+  }
+
+  handleLabelEditClick = (node_title) => {
+    console.log(node_title);
+    this.setState({
+      nodeTitle: node_title,
+      originalLabel: this.findNodeLabelFromDotSrc(node_title),
+      labelEditDialogIsOpen: true,
+    });
+  }
+
+  handleLabelEditDialogClose = () => {
+    this.setState({
+      labelEditDialogIsOpen: false,
+    });
+  }
+
+  handleLabelConfirmation = (prev_label, label) => {
+    //Change Labels
+    console.log(label);
+    let new_label = label.replace(/\n/g, '\\n');
+    let new_src = this.state.dotSrc;
+    let regexp = new RegExp(this.state.nodeTitle + ' \\[ *label=".*?"', 'g');
+    new_src = new_src.replace(regexp, this.state.nodeTitle + ' [label="' + new_label + '"');
+	console.log(new_src);
+
+	this.handleTextChange(new_src);
+	this.handleLabelEditDialogClose(new_src);
+
+    let diff = this.diff(prev_label, new_label)
+    this.appendLog(`Labels Edited: ${prev_label} => ${label}  (${diff})` );
+    this.setState({
+      howOftenLabelsAreEdited: this.state.howOftenLabelsAreEdited + diff,
+    });
+
+    console.log(`${this.state.howOftenLabelsAreCloned}, ${this.state.howOftenLabelsAreEdited}, ${this.state.howOftenEdgesAreEdited}`);
+   }
+
+  diff = (old_string, string) =>{
+    //calculate how 2 strings differ and return by value
+    //Reference: https://note.affi-sapo-sv.com/js-diff.php
+
+    let old_array = Array.from(old_string);
+    let array = Array.from(string);
+
+    let [A,B] = old_array.length < array.length ? [old_array, array] : [array, old_array];
+
+    let delta = B.length - A.length;
+
+    let max = Math.max;
+    let p = -1;
+    let fp = [];
+    for( let i = -(A.length+1) ; i <= B.length+1 ; i ++ ) fp[i] = -1;
+
+    do{
+        p++;
+        for( let k = -p ; k <= delta -1 ; k ++ )    fp[k] = this.snake( k, max( fp[k-1]+1, fp[k+1]), A, B);
+        for( let k = delta + p ; k >= delta + 1 ; k -- )    fp[k] = this.snake( k, max( fp[k-1]+1, fp[k+1]), A, B);
+        fp[ delta ] = this.snake( delta, max( fp[delta-1] + 1, fp[delta+1] ), A, B);
+    }while( fp[delta] !== B.length );
+
+
+    console.log(delta+2*p);
+    return delta + 2 * p;
+  }
+
+  snake = (k , y, A, B) =>{
+    let x = y - k;
+    while ( x < A.length && y < B.length && A[ x ] === B[ y ] ){
+        x ++; y ++;
+    }
+    return y;
+  }
+
+  findNodeLabelFromDotSrc = (node_title) => {
+    let regexp = new RegExp(node_title + ' \\[label=".*?"', 'g');
+    let label = this.state.dotSrc.match(regexp)[0];
+    label = label.replace(/(g|n).*? \[ *?label=/g, '').replace(/\"/g, '').replace(/\\n/g, '\n');
+    console.log(label);
+    return label;
   }
 
   registerNodeShapeClick = (handleNodeShapeClick) => {
@@ -978,8 +1099,11 @@ class Index extends React.Component {
                 registerZoomOutMapButtonClick={this.registerZoomOutMapButtonClick}
                 registerZoomResetButtonClick={this.registerZoomResetButtonClick}
                 registerGetSvg={this.registerGetSvg}
+                onLabelEditClick={this.handleLabelEditClick}
                 onInitialized={this.handleGraphInitialized}
                 onError={this.handleError}
+                onLabelCloning={this.handleLabelCloning}
+                onEdgeEditing={this.handleEdgeEditing}
                 test={this.state.test}
               />
             </Paper>
@@ -1010,6 +1134,13 @@ class Index extends React.Component {
             onAboutDialogClose={this.handleAboutDialogClose}
           />
         }
+        {this.state.labelEditDialogIsOpen &&
+          <LabelEditDialog
+            originalLabel={this.state.originalLabel}
+            onLabelEditDialogClose={this.handleLabelEditDialogClose}
+            onLabelConfirmation={this.handleLabelConfirmation}
+          />
+       }
       </div>
     );
   }

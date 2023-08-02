@@ -1,5 +1,6 @@
 # coding: utf-8
 
+from reprlib import recursive_repr
 import sys
 import os
 import copy
@@ -77,6 +78,18 @@ class GoalModelConstructor:
 		self.words = sentence.to_dict()
 		self.words = [root] + self.words
 
+		#元の文章に具体化のフレーズが含まれていれば、それを示すマーカーを入れる
+		if self.isIncludesEmbodyingPhrase(sentence):
+			print('>>>>>>>>include embodyment')
+			embodying = {'id': len(self.words), 'text': '(embodying)', 'upos': '', 'xpos': '',  'feats': '', 'head': 0, 'deprel': ''}
+			self.words = self.words + [embodying]
+
+	#for exampleやin particularなど、前の文章を具体化するようなフレーズを正規表現で除去する
+	def isIncludesEmbodyingPhrase(self, sentence):
+		embodyingPhrase = re.compile(r'^(especially|specifically|in particular|for example|for instance)', re.IGNORECASE)
+		print(re.search(embodyingPhrase, sentence.text))
+		return re.search(embodyingPhrase, sentence.text) is not None
+
 	def findGoalsByDependency(self):
 		for word in self.words:
 			head = self.words[word['head']]
@@ -96,16 +109,20 @@ class GoalModelConstructor:
 					self.addGoal2Tree(word)
 
 			if word['deprel'] == 'conj':
-				if head['xpos'] == 'VB':
-					self.addGoal2Tree(head, word)
+				self.addGoal2Tree(head)
+				self.addGoal2Tree(word)
 
 			if word['deprel'] == 'xcomp':
 				if head['xpos'] in ['VB', 'VBN']:
 					self.addGoal2Tree(word)
 	
 	def addGoal2Tree(self, word, child=None):
+		embodyingPhrase = re.compile(r'^(especially|specifically|in particular|for example|for instance) *$', re.IGNORECASE)
 		node = self.getGoalNode(word)
-		self.goalmodel.addGoal(node)
+
+		#ゴールとして抽出されたフレーズが特定のフレーズでない場合、ゴールをゴールモデルに追加する
+		if re.search(embodyingPhrase, node.getSpec()) is None:
+			self.goalmodel.addGoal(node)
 		
 		if child is not None:
 			#子が別のゴールに含まれる場合、子を含むゴールを作らない
@@ -113,9 +130,10 @@ class GoalModelConstructor:
 				return
 
 			child_node = self.getChildNode(child)
-			print(f"{word['text']}, {child['text']}")
-			self.goalmodel.addGoal(child_node, node)
-
+			if re.search(embodyingPhrase, child_node.getSpec()) is None:
+				print(f"{word['text']}, {child['text']}")
+				self.goalmodel.addGoal(child_node, node)
+	
 	def getGoalNode(self, word):
 		goal = self.getTempGoalIncludes(word)
 
@@ -188,10 +206,11 @@ class GoalModelConstructor:
 
 		return depending_words
 	
-	#ある単語に掛かり受けタグ上関係のある単語を返す
+	#ある単語に掛かり受けタグ上関係のある単語かどうかを返す
 	def isWordDependent(self, word):
-		return  ( word['deprel'] not in ['advcl', 'xcomp', 'punct']
-					and not word['deprel'].startswith('obl') )
+		return  (( word['deprel'] not in ['advcl', 'xcomp', 'punct', 'conj', 'cc']
+					and not word['deprel'].startswith('obl'))
+					or (not word['xpos'].startswith('VB') and word['deprel'] in ['conj', 'cc']))
 
 	#文をN単語ごとに改行で区切る
 	def markOffWithNewLine(self, sentence):
@@ -216,12 +235,34 @@ class GoalModelConstructor:
 
 	#ゴールツリーのノードを適当な親とくっつける
 	def findParentAndLink(self, node):
-		word_id = self.findWordIDInParentNodeByDependency(node)
-		parent_node = self.findParentNodeFromSentence(word_id)
+		parent_node = self.findParent(node)
+		self.linkNodes(parent_node, node)
+
+	#ゴールツリーのノードの親をみつける
+	#条件によって再帰する
+	#訳あってfindWordIDInParentNodeByDependencyの中身を丸コピしています
+	#不便ならfindWordIDInParentNodeByDependency（＝下の関数）を消して下さい
+	def findParent(self, node):
+		print(node.getSpec())
+		words_in_goal = self.tmp_goals[node.getSpec()]
+
+		isRecursive = False
+		head_id = 0
+		head = words_in_goal[0]
+
+		while head is not None:
+			isRecursive = head['deprel'] == 'conj'
+			print(f"{head['id']}, {head['text']}, {head['head']}, {head['deprel']}, {isRecursive}")
+			head_id = head['head']
+			head = next(filter(lambda x:x['id'] == head_id, words_in_goal), None)
+
+		parent_node = self.findParentNodeFromSentence(head_id)
 		if parent_node is None:
 			parent_node = self.findParentNodeFromTree(node)
-			
-		self.linkNodes(parent_node, node)
+		if isRecursive:
+			parent_node = parent_node.getP() or self.findParent(parent_node)
+			print(f"recursion: {parent_node.getSpec()}")
+		return parent_node
 
 	#ゴールノードの親ノードらしきノードに含まれる単語のIDを依存関係から探す
 	def findWordIDInParentNodeByDependency(self, node):
@@ -238,6 +279,7 @@ class GoalModelConstructor:
 		print('exiting words_in_goal')
 		return head_id
 
+
 	#あるIDの単語を含むゴールを、同じ文章のゴールから探し、あればノードを返す
 	def findParentNodeFromSentence(self, head_id):
 		for goal in self.tmp_goals:
@@ -251,6 +293,10 @@ class GoalModelConstructor:
 	
 	#あるゴールノードの親をゴールツリーから探す
 	def findParentNodeFromTree(self, node):
+		if next(filter(lambda x:x['text'] == '(embodying)', self.words), None) is not None:
+			print('>>>>>>>>found embodyment')
+			return self.goalmodel.getLastAddedGoal()
+
 		tmp_parent_node = self.goalmodel.getLastAddedGoal()
 		lemma_intersect = self.getLemmaIntersect(node, tmp_parent_node)
 
