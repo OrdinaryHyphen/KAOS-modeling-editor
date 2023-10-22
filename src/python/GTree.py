@@ -4,8 +4,9 @@ import os
 from graphviz import Digraph
 
 class GNode:
-    def __init__(self, spec, parent=None, children=None, aggrFlg=False, andFlag=True):
+    def __init__(self, spec, note='', parent=None, children=None, aggrFlg=False, andFlag=False):
         self.__spec = spec
+        self.__note = note #脚注的なもの
         self.__parent = parent
         self.__id = 0 #後で変更
         if not children:
@@ -13,7 +14,7 @@ class GNode:
             self.__children['NB'] = []
         else:
             self.__children = children
-        self._style = {'style':'filled', 'shape':'box', 'fillcolor':'#d5ffff'}
+        self._style = {'style':'filled', 'shape':'parallelogram', 'fillcolor':'#d5ffff', 'fixedsize': 'true'}
         self.__cstyle = {'width':'0.2', 'style':'filled', 'shape':'circle', 'fillcolor':'#ffff00'}
         self.__aggrFlg = aggrFlg
         self.__about = None
@@ -21,6 +22,9 @@ class GNode:
 
     def setSpec(self, spec):
         self.__spec = spec
+    
+    def setNote(self, note):
+        self.__note = note
 
     def setP(self, parent):
         self.__parent = parent
@@ -45,6 +49,9 @@ class GNode:
 
     def getSpec(self):
         return self.__spec
+    
+    def getNote(self):
+        return self.__note
 
     def getID(self):
         return self.__id
@@ -124,22 +131,28 @@ class GNode:
 
     def getDOT(self, graph, centerid):
         spec = self.__spec
+        print(spec, 'AND-refinement' in spec)
         if self.__about:
             spec += '\n[' + self.__about.getSpec() + ']'
         if self.__aggrFlg:
             graph.node('g'+str(self.__id), spec,
                        {'style': 'filled', 'shape': 'parallelogram', 'fillcolor': 'white:#777777',
                         'gradientangle': '270'})
+        elif 'AND-refinement' in spec:
+            graph.node('g' + str(self.__id), '', self.__cstyle)
         else:
             splitLabel = spec.split('\\n')
-
-            labeling = ('\n').join(splitLabel)
+            labeling = ('\\n').join(splitLabel)
+            width = 0.15 * max([len(label) for label in splitLabel])
+            height = 0.2 * len(splitLabel)
+            self._style.update({'width': str(width), 'height': str(height)})
             graph.node('g'+str(self.__id), labeling, self._style)
+        
         topid = self.__id
         ceid = centerid
         Cs = self.getCs(NB) #ANDとORについて
         if len(self.__children['NB']) != 0:
-            if self.__andFlag == True:#親のフラッグがTrueなら黄玉、Falseならなし
+            if self.__andFlag:#親のフラッグがTrueなら黄玉、Falseならなし
                 graph.node('c' + str(centerid), '', self.__cstyle)
                 graph.edge('c' + str(centerid), 'g' + str(self.__id), arrowhead='normal', headport='s')
 
@@ -148,14 +161,14 @@ class GNode:
                 ceid += 1
                 (chid, ceid) = child.getDOT(graph, ceid)
                 #ここでandFlagを覗いてそれがTrueなら下の行、Falseなら('g'+ str(self.__id)とつなぐ）
-                if self.__andFlag == False:
+                if not self.__andFlag:
                     graph.edge('g' + str(chid), 'g' + str(self.__id), arrowhead='normal', headport='s')
                 else:
                     graph.edge('g' + str(chid), 'c' + str(centerid), arrowhead='none', tailport='n')
         return (topid, ceid)
 
 class NB(GNode):
-    def __init__(self, spec, parent=None, children=None, aggrFlg=False, andFlag=True):
+    def __init__(self, spec, parent=None, children=None, aggrFlg=False, andFlag=False):
         super(NB, self).__init__(spec, parent=parent, children=children, aggrFlg=aggrFlg, andFlag=andFlag)
         self._style['fillcolor'] = '#d5ffff'
 

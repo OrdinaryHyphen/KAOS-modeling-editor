@@ -5,7 +5,8 @@
 from flask import Flask
 from flask import request, make_response, jsonify
 from flask_cors import CORS, cross_origin
-from GoalModelConstructor import GoalModelConstructor
+from TabTextIntoDOTFile import GoalModelConstructor
+#from GoalModelConstructor import GoalModelConstructor
 
 
 app = Flask(__name__)
@@ -15,7 +16,7 @@ CORS(app, support_credentials=True, responses={r"/*": {"origins": "*"}})
 @app.route('/', methods = ['GET'])
 @cross_origin(supports_credentials=True)
 def index():
-	return "get index";
+	return "get index"
 
 @app.route("/parse", methods=['GET','POST'])
 @cross_origin(supports_credentials=True)

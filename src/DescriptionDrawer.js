@@ -80,31 +80,36 @@ class DescriptionDrawer extends React.Component {
             </IconButton>
           </div>
           <Divider />
-	      <AceEditor
-	        mode="txt"
-             theme="github"
-             fontSize={this.props.fontSize + 'px'}
-	        tabSize={this.props.tabSize}
-	        value={this.props.goalDescription}
-	        height= '80%'
-	        width= '100%'
-	        onChange={this.handleChange}
-	      />
-	   <Divider />
-	   <Toolbar>
-		   <p>
-		      Input goal descriptions, then press the right button.
-		   </p>
-		   <div style={{flexGrow: 1}}></div>
-   	   <Button
-         	   color="inherit"
-         	   size="Large"
-         	   style={{flexGrow: 0.2}}
-         	   onClick={this.startParsing}
-              >
-              Parse
-              </Button>
-	   </Toolbar>
+            <AceEditor
+                mode="txt"
+                theme="github"
+                fontSize={this.props.fontSize + 'px'}
+                tabSize={this.props.tabSize}
+                value={this.props.goalDescription}
+                height= '80%'
+                width= '100%'
+                wrapEnabled
+                softWrap={false}
+                setOptions={{
+                 "indentedSoftWrap": false,
+                }}
+                onChange={this.handleChange}
+             />
+           <Divider />
+           <Toolbar>
+       <p>
+         Input goal descriptions, then press the right button.
+       </p>
+       <div style={{flexGrow: 1}}></div>
+      <Button
+           color="inherit"
+           size="Large"
+           style={{flexGrow: 0.2}}
+           onClick={this.startParsing}
+        >
+         Parse
+        </Button>
+        </Toolbar>
         </Drawer>
       </div>
     );

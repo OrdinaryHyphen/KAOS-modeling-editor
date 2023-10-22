@@ -1036,6 +1036,7 @@ class Index extends React.Component {
                   onDescriptionDrawerClose={this.handleGoalDescriptionDrawerClose}
                   onTextChange={this.handleGoalDescriptionChange}
                   onStartParsing={this.handleGoalDescriptionParsing}
+                  fontSize={this.state.fontSize}
                 />
               }
               <div style={{display: editorIsOpen ? 'block' : 'none'}}>

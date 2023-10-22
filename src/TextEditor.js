@@ -141,7 +141,8 @@ class TextEditor extends React.Component {
             $blockScrolling: true
           }}
           annotations={annotations}
-          markers={markers}        />
+          markers={markers}
+        />
         <IconButton
           id="error-button"
           className={classes.errorButton}
